@@ -11,7 +11,11 @@ path_test_config = Path(
             "init_weights"] = "D:\\USERS\\yq\\code\\MotionTracking\\DeepLabCut\\YQScripts\\testdata\\Test2-DLCTest2-2024-07-27\\dlc-models\\iteration-0\\Test2Jul27-trainset95shuffle1\\train\\snapshot-100000"
 
 ```
+### datasets
+```angular2html
+data:  https://rec.ustc.edu.cn/share/f5e65790-6206-11ef-8a13-9b0f90b6450e
 
+```
 ## requirement
 My env is TF2.10 & cuda
 1. deeplabcut https://github.com/DeepLabCut/DeepLabCut/tree/main

@@ -40,6 +40,7 @@ if __name__ == "__main__":
     # main()
     display = True
     model_dir = r"D:\USERS\yq\code\MotionTracking\DLC_Live\DLC_Dog_resnet_50_iteration-0_shuffle-0"
+    # model_dir = r"D:\USERS\yq\code\MotionTracking\DeepLabCut\YQScripts\testdata\Test2-DLCTest2-2024-07-27\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\train"
     model_dir = Path(model_dir)
     video_file = r'D:\USERS\yq\code\MotionTracking\DLC_Live\check_install_dog_clip.avi'
     # benchmark_videos(str(model_dir), video_file, display=display, resize=0.5, pcutoff=0.25)
