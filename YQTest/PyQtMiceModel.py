@@ -1,4 +1,6 @@
 import sys
+import time
+
 import cv2
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, \
     QFileDialog, QComboBox
@@ -25,6 +27,13 @@ class RealTimeDetectionApp(QMainWindow):
 
         self.result_label = QLabel(self)
         self.video_layout.addWidget(self.result_label)
+
+        self.usedTime_label = QLabel(self)
+        self.video_layout.addWidget(self.usedTime_label)
+
+        self.backCenter_label = QLabel(self)
+        self.video_layout.addWidget(self.backCenter_label)
+
 
         self.control_layout = QVBoxLayout()
         self.layout.addLayout(self.control_layout)
@@ -90,6 +99,9 @@ class RealTimeDetectionApp(QMainWindow):
             self.capture.release()
         self.video_label.clear()
         self.result_label.clear()
+        self.usedTime_label.clear()
+        self.backCenter_label.clear()
+
         self.start_camera_button.setEnabled(True)
         self.stop_camera_button.setEnabled(False)
 
@@ -98,9 +110,10 @@ class RealTimeDetectionApp(QMainWindow):
         flag = True
         TFGPUinference = True
         cfg = self.cfg
+        usedTime = 0
         if ret and flag:
-            if cfg["cropping"]:
-                ny, nx = checkcropping(cfg, cap)
+            # if cfg["cropping"]:
+            #     ny, nx = checkcropping(cfg, cap)
 
             pose_tensor = predict.extract_GPUprediction(
                 self.outputs, self.dlc_cfg
@@ -114,11 +127,12 @@ class RealTimeDetectionApp(QMainWindow):
                 )
             else:
                 frame = img_as_ubyte(frame)
-
+            start = time.time()
             pose = self.sess.run(
                 pose_tensor,
                 feed_dict={self.inputs: np.expand_dims(frame, axis=0).astype(float)},
             )
+            usedTime = time.time() - start
             pose[:, [0, 1, 2]] = pose[:, [1, 0, 2]]
             # pose = predict.getpose(frame, dlc_cfg, sess, inputs, outputs)
             # 定义每个点的颜色 (BGR格式)
@@ -131,10 +145,16 @@ class RealTimeDetectionApp(QMainWindow):
                 # frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
                 # if pose[i, 2] > self.pcutoff:
                 frame = cv2.circle(frame, (pose[i, 0:2]).astype(np.int32), self.radius, colors[i % 4], -1)
+            meanPose = np.mean(pose,axis=1)
+            vector = [frame.shape[0]//2 - meanPose[0],frame.shape[1]//2 - meanPose[1]]
+            print(f"used time is {usedTime}")
+            print(f"vector is {vector}")
             self.counter += 1
             self.display_frame(frame)
             self.display_pose_results(pose)
             self.poseList.append(pose)
+            self.display_usedTime(usedTime)
+            self.display_back2center(vector)
 
             # PredictedData[
             # self.counter, :
@@ -156,6 +176,8 @@ class RealTimeDetectionApp(QMainWindow):
 
             self.display_frame(frame)
             self.display_results(faces)
+
+
         else:
             self.stop_camera()
 
@@ -172,6 +194,14 @@ class RealTimeDetectionApp(QMainWindow):
         for i, (x, y, w, h) in enumerate(faces, start=1):
             results_text += f"\nFace {i}: X={x}, Y={y}, W={w}, H={h}"
         self.result_label.setText(results_text)
+
+    def display_usedTime(self, usedTime):
+        usedTime_text = f"used time is : {usedTime}"
+        self.usedTime_label.setText(usedTime_text)
+
+    def display_back2center(self, vector):
+        vector_text = f"vector is : {vector}"
+        self.backCenter_label.setText(vector_text)
     def display_pose_results(self, pose):
         results_text = f"Detected Pose: {len(pose)}"
         for i in range(pose.shape[0]):
