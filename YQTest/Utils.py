@@ -186,8 +186,30 @@ def converFunc():
     print(f"Model saved to {output_path}")
 
 
+def calculate_angle(vectorA, vectorB):
+    # 计算点积
+    dot_product = np.dot(vectorA, vectorB)
+
+    # 计算两个向量的模
+    magnitude_A = np.linalg.norm(vectorA)
+    magnitude_B = np.linalg.norm(vectorB)
+
+    # 计算夹角的余弦值
+    cos_theta = dot_product / (magnitude_A * magnitude_B)
+
+    # 防止数值误差导致cos_theta超出[-1, 1]
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+    # 通过 arccos 获得弧度并转换为角度
+    angle_radians = np.arccos(cos_theta)
+    angle_degrees = np.degrees(angle_radians)
+
+    return angle_degrees
+
 def UseModelGetPose(capture,sess, inputs, outputs, dlc_cfg, radius = 3):
     ct = 0
+    prevVec = np.array([0,1])
+    originVec = np.array([0,1])
     while True:
         ret, frame = capture.read()
         if not ret:
@@ -228,11 +250,14 @@ def UseModelGetPose(capture,sess, inputs, outputs, dlc_cfg, radius = 3):
                 # frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
                 # if pose[i, 2] > self.pcutoff:
                 frame = cv2.circle(frame, (pose[i, 0:2]).astype(np.int32), radius, colors[i % 4], -1)
-            int_pose = int(pose)
+            int_pose = pose.astype(int)
             point_1 = int_pose[0, 0:2]
             point_2 = int_pose[1, 0:2]
             point_3 = int_pose[2, 0:2]
             point_4 = int_pose[3, 0:2]
+            currentVec = np.array([pose[0, 0:2] - pose[3, 0:2]])
+            angleRes = calculate_angle(currentVec,originVec)
+            print(f"angleRes is {angleRes}")
             # 画线：1号点到2号点
             cv2.line(frame, point_1, point_2, (0, 255, 255), 2)
 
@@ -242,7 +267,8 @@ def UseModelGetPose(capture,sess, inputs, outputs, dlc_cfg, radius = 3):
             # 画线：1号点到4号点
             cv2.line(frame, point_1, point_4, (0, 255, 255), 2)
             ct+=1
-            cv2.imwrite(os.path.join(r"D:\USERS\yq\code\MotionTracking\DLC_Live\Live_Tracking\YQTest\saveTest",f"{ct}.jpg"),frame)
+            saveframe = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(os.path.join(r"D:\USERS\yq\code\MotionTracking\DLC_Live\Live_Tracking\YQTest\saveTest",f"{ct}.jpg"),saveframe)
             meanPose = np.mean(pose, axis=1)
             vector = [frame.shape[0] // 2 - meanPose[0], frame.shape[1] // 2 - meanPose[1]]
             print(f"pose is {pose}")
