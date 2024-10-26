@@ -1,5 +1,4 @@
 import os.path
-import time
 
 import cv2
 import tensorflow as tf
@@ -53,8 +52,6 @@ def setup_pose_prediction(cfg, allow_growth=False, collect_extra=False):
     else:
         return sess, inputs, outputs
 def setup_GPUpose_prediction(cfg, allow_growth=False):
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # 使用GPU 0
-
     tf.compat.v1.reset_default_graph()
     inputs = tf.compat.v1.placeholder(
         tf.float32, shape=[cfg["batch_size"], None, None, 3]
@@ -186,104 +183,15 @@ def converFunc():
     print(f"Model saved to {output_path}")
 
 
-def calculate_angle(vectorA, vectorB):
-    # 计算点积
-    dot_product = np.dot(vectorA, vectorB)
-
-    # 计算两个向量的模
-    magnitude_A = np.linalg.norm(vectorA)
-    magnitude_B = np.linalg.norm(vectorB)
-
-    # 计算夹角的余弦值
-    cos_theta = dot_product / (magnitude_A * magnitude_B)
-
-    # 防止数值误差导致cos_theta超出[-1, 1]
-    cos_theta = np.clip(cos_theta, -1.0, 1.0)
-
-    # 通过 arccos 获得弧度并转换为角度
-    angle_radians = np.arccos(cos_theta)
-    angle_degrees = np.degrees(angle_radians)
-
-    return angle_degrees
-
-def UseModelGetPose(capture,sess, inputs, outputs, dlc_cfg, radius = 3):
-    ct = 0
-    prevVec = np.array([0,1])
-    originVec = np.array([0,1])
-    while True:
-        ret, frame = capture.read()
-        if not ret:
-            break
-        flag = True
-
-        if ret and flag:
-            # if cfg["cropping"]:
-            #     ny, nx = checkcropping(cfg, cap)
-
-            pose_tensor = predict.extract_GPUprediction(
-                outputs, dlc_cfg
-            )  # extract_output_tensor(outputs, dlc_cfg)
-            # PredictedData = np.zeros((nframes, 3 * len(self.dlc_cfg["all_joints_names"])))
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            if cfg["cropping"]:
-                frame = img_as_ubyte(
-                    frame[cfg["y1"]: cfg["y2"], cfg["x1"]: cfg["x2"]]
-                )
-            else:
-                frame = img_as_ubyte(frame)
-            start = time.time()
-            pose = sess.run(
-                pose_tensor,
-                feed_dict={inputs: np.expand_dims(frame, axis=0).astype(float)},
-            )
-            usedTime = time.time() - start
-            pose[:, [0, 1, 2]] = pose[:, [1, 0, 2]]
-            # pose = predict.getpose(frame, dlc_cfg, sess, inputs, outputs)
-            # 定义每个点的颜色 (BGR格式)
-            colors = [(255, 0, 0),  # 蓝色
-                      (0, 255, 0),  # 绿色
-                      (0, 0, 255),  # 红色
-                      (255, 255, 0)]  # 黄色
-            for i in range(pose.shape[0]):
-                # color = (0, 255, 0)  # 绿色
-                # frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
-                # if pose[i, 2] > self.pcutoff:
-                frame = cv2.circle(frame, (pose[i, 0:2]).astype(np.int32), radius, colors[i % 4], -1)
-            int_pose = pose.astype(int)
-            point_1 = int_pose[0, 0:2]
-            point_2 = int_pose[1, 0:2]
-            point_3 = int_pose[2, 0:2]
-            point_4 = int_pose[3, 0:2]
-            currentVec = np.array([pose[0, 0:2] - pose[3, 0:2]])
-            angleRes = calculate_angle(currentVec,originVec)
-            print(f"angleRes is {angleRes}")
-            # 画线：1号点到2号点
-            cv2.line(frame, point_1, point_2, (0, 255, 255), 2)
-
-            # 画线：1号点到3号点
-            cv2.line(frame, point_1, point_3, (0, 255, 255), 2)
-
-            # 画线：1号点到4号点
-            cv2.line(frame, point_1, point_4, (0, 255, 255), 2)
-            ct+=1
-            saveframe = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(os.path.join(r"D:\USERS\yq\code\MotionTracking\DLC_Live\Live_Tracking\YQTest\saveTest",f"{ct}.jpg"),saveframe)
-            meanPose = np.mean(pose, axis=1)
-            vector = [frame.shape[0] // 2 - meanPose[0], frame.shape[1] // 2 - meanPose[1]]
-            print(f"pose is {pose}")
-            print(f"used time is {usedTime}")
-            print(f"vector is {vector}")
-
 if __name__ == '__main__':
     # converFunc()
     path_test_config = Path(
-        r'D:\USERS\yq\code\MotionTracking\DeepLabCut\YQScripts\testdata\Test2-DLCTest2-2024-07-27\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml')
+        r'E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml')
     dlc_cfg = load_config(str(path_test_config))
-    dlc_cfg["init_weights"] = "D:\\USERS\\yq\\code\\MotionTracking\\DeepLabCut\\YQScripts\\testdata\\Test2-DLCTest2-2024-07-27\\dlc-models\\iteration-0\\Test2Jul27-trainset95shuffle1\\train\\snapshot-100000"
+    dlc_cfg["init_weights"] = r"E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\train\snapshot-100000"
 
-    sess, inputs, outputs = setup_GPUpose_prediction(dlc_cfg, allow_growth=False)
-    TFGPUinference = True
+    sess, inputs, outputs = setup_pose_prediction(dlc_cfg, allow_growth=False)
+    TFGPUinference = False
     cfg = {}
     cfg["cropping"] = False
     root = r"D:\USERS\yq\code\MotionTracking\DeepLabCut\YQScripts\testdata\Test20s-YQ-2024-07-28\videos"
@@ -302,16 +210,13 @@ if __name__ == '__main__':
         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
     )
 
-    UseModelGetPose(cap, sess, inputs, outputs, dlc_cfg, radius=3)
-
-    # if TFGPUinference:
-    #     PredictedData, nframes = GetPoseS_GTF(
-    #         cfg, dlc_cfg, sess, inputs, outputs, cap, nframes
-    #     )
-    #     print(f"PredictedData is {PredictedData}")
-    # else:
-    #     pass
-    #
+    if TFGPUinference:
+        PredictedData, nframes = GetPoseS_GTF(
+            cfg, dlc_cfg, sess, inputs, outputs, cap, nframes
+        )
+        print(PredictedData)
+    else:
+        pass
     # PredictedData, nframes = GetPoseS(
     #     cfg, dlc_cfg, sess, inputs, outputs, cap, nframes
     # )
