@@ -174,7 +174,17 @@ class RealTimeDetectionApp(QMainWindow):
         self.poseinit = [424,  233]
         self.frameCount = 0
         #### camera index
-        self.index = 2
+
+        # 初始化摄像头索引和状态
+        self.camera1_index = 2  # 第一个摄像头的索引
+        self.camera2_index = 1  # 第二个摄像头的索引
+        self.active_camera = None
+        self.capture = None
+
+        # 初始化标志，用于指示是否切换到第二个摄像头
+        self.use_camera2 = False
+
+        # self.index = 2
 
 
         self.mycalib = calib()
@@ -271,16 +281,33 @@ class RealTimeDetectionApp(QMainWindow):
             self.timer.start(20)
 
     def start_camera(self):
-        self.capture = cv2.VideoCapture(self.index)
-        
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # 设置为最大宽度（你可以修改为具体最大值）
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # 设置为最大高度
-        self.capture.set(cv2.CAP_PROP_FPS, 30)  # 设置为最大帧率
-        self.video_path = None
+        """启动第一个摄像头并开始追踪"""
+        self.active_camera = cv2.VideoCapture(self.camera1_index)
+        self.camera2 = cv2.VideoCapture(self.camera2_index)
+        self.capture = self.active_camera
+
+        # 设置摄像头参数
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        self.capture.set(cv2.CAP_PROP_FPS, 30)
+
         self.start_camera_button.setEnabled(False)
         self.stop_camera_button.setEnabled(True)
-
+        self.use_camera2 = False  # 设置为使用第一个摄像头
         self.timer.start(20)
+
+
+    def switch_to_camera2(self):
+        """切换到第二个摄像头"""
+        if self.capture:
+            self.capture.release()
+
+        self.active_camera = self.camera2
+        self.capture = self.active_camera
+
+        self.use_camera2 = True
+        print("Switched to Camera 2")
+
 
     def stop_camera(self):
         if self.capture:
