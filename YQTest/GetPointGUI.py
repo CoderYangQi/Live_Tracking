@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 
 # 打开视频文件
-video_path = r'D:\Backup\Documents\S-EYE Files\Images\20241026-182350-433.mp4'  # 替换为你的视频文件路径
+video_path = r'D:\Backup\Documents\S-EYE Files\Images\20241027-215330-844.mp4'  # 替换为你的视频文件路径
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -24,5 +24,5 @@ if ret:
     cv2.imshow('Extracted Frame', frame)
     
     # 保存该帧为图像
-    save_path = 'extracted_frame.jpg'
+    save_path = 'extracted_frame2.jpg'
     cv2.imwrite(save_path, frame)

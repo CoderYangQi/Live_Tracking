@@ -33,7 +33,7 @@ class MechanicalAxisController:
 
     # 初始化系统
     def init_motion_system(self):
-        self.dll = CDLL(r"E:\yq\code\MovingInterpolation2D\GAS.dll")
+        self.dll = CDLL(r"E:\yq\code\github\Live_Tracking\YQTest\GAS.dll")
 
         print(self.dll)
 
@@ -171,9 +171,14 @@ class RealTimeDetectionApp(QMainWindow):
 
         # self.moveDll = Move()
         # self.poseinit = [827, 314]
-        self.poseinit = [424,  233]
+        self.poseinit = [1169,  337]
+        self.poseinit2 = [1435,  577]
         self.frameCount = 0
         #### camera index
+
+        # data 置信度判断和像素距离判断
+        self.confThreshold = 0.6
+        self.distanceThreshold = 50
 
         # 初始化摄像头索引和状态
         self.camera1_index = 2  # 第一个摄像头的索引
@@ -186,16 +191,80 @@ class RealTimeDetectionApp(QMainWindow):
 
         # self.index = 2
 
-
-        self.mycalib = calib()
-        self.mycalib.Test()
+        # init camera 1
+        self.init_cameraMatrix()        
+        self.init_camera2_Matrix()
         self.worldInit = self.mycalib.projectPointNoUnistort(self.poseinit[0], self.poseinit[1])
+        self.worldInit2 = self.camera2calib.projectPointNoUnistort(self.poseinit2[0], self.poseinit2[1])
         self.safeAnchor = np.array([[250, 100],
                                     [1000, 100],
                                     [1000, 900],
                                     [250, 900]], np.int32)
+        self.safeAnchor = np.array([[0, 0],
+                                    [2000, 0],
+                                    [2000, 1900],
+                                    [0, 1900]], np.int32)
         # self.init_threshold()
-   
+    def init_cameraMatrix(self):
+        fx = 964.12
+        fy = 969.67
+        cx = 968.65
+        cy = 557.79
+        k1 = -0.17
+        k2 = 0.49
+        k3 = -0.56
+        p1 = 0
+        p2 = 0.0
+
+        self.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
+        self.mycalib = calib()
+        self.mycalib.camera_matrix = np.array([
+            [fx, 0, cx],
+            [0, fy, cy],
+            [0, 0, 1]
+        ])  # 你的相机内参矩阵
+        self.mycalib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
+        self.mycalib.rvec = np.array ([[ 0.00616052],
+        [ 0.05821707],
+        [-1.58579181]])
+
+        self.mycalib.tvec = np.array([[  49.39697075],
+        [-239.42566489],
+        [1018.93725814]])
+
+        self.mycalib.Test()
+        # self.init_threshold()
+    def init_camera2_Matrix(self):
+        print(f"init_camera2_Matrix")
+        fx = 995.62
+        fy = 1006.27
+        cx = 944.59
+        cy = 586.57
+        k1 = -0.06
+        k2 = 0.15
+        k3 = -0.11
+        p1 = 0.01
+        p2 = -0.01
+
+        
+
+        self.camera2calib = calib()
+        self.camera2calib.camera_matrix = np.array([
+            [fx, 0, cx],
+            [0, fy, cy],
+            [0, 0, 1]
+        ])  # 你的相机内参矩阵
+        self.camera2calib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
+        self.camera2calib.rvec = np.array ([[-0.17508757],
+        [-0.1618264 ],
+        [-1.57177937]])
+
+        self.camera2calib.tvec = np.array([[ 399.2642267 ],
+        [ -24.76443787],
+        [1112.85500664]])
+
+        self.camera2calib.Test()
+
     def init_threshold(self):
         image_path = r'E:\yq\code\DLC_Project\12.jpg'  # 替换为你的图像路径
         image = cv2.imread(image_path)
@@ -282,14 +351,18 @@ class RealTimeDetectionApp(QMainWindow):
 
     def start_camera(self):
         """启动第一个摄像头并开始追踪"""
-        self.active_camera = cv2.VideoCapture(self.camera1_index)
+        self.camera1 = cv2.VideoCapture(self.camera1_index)
         self.camera2 = cv2.VideoCapture(self.camera2_index)
-        self.capture = self.active_camera
+        self.capture = self.camera1
 
         # 设置摄像头参数
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         self.capture.set(cv2.CAP_PROP_FPS, 30)
+        # 设置摄像头参数
+        self.camera2.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        self.camera2.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        self.camera2.set(cv2.CAP_PROP_FPS, 30)
 
         self.start_camera_button.setEnabled(False)
         self.stop_camera_button.setEnabled(True)
@@ -299,14 +372,25 @@ class RealTimeDetectionApp(QMainWindow):
 
     def switch_to_camera2(self):
         """切换到第二个摄像头"""
-        if self.capture:
-            self.capture.release()
+        # if self.capture:
+        #     self.capture.release()
 
-        self.active_camera = self.camera2
-        self.capture = self.active_camera
+        self.capture = self.camera2
 
         self.use_camera2 = True
         print("Switched to Camera 2")
+
+    def switch_to_camera1(self):
+        """切换到第一个摄像头"""
+        # if self.capture:
+        #     self.capture.release()
+
+        self.capture = self.camera1
+
+        self.use_camera2 = False
+        print("Switched to Camera 1")
+
+
 
 
     def stop_camera(self):
@@ -332,6 +416,37 @@ class RealTimeDetectionApp(QMainWindow):
             return True
         else:
             return False 
+    
+    def calculateMid(self, pose):
+
+        # 置信度阈值
+        confidence_threshold = self.confThreshold
+        distance = self.distanceThreshold
+
+        # 筛选有效点
+        valid_points = pose[pose[:, 2] >= confidence_threshold]
+
+        # 如果有有效点，则计算质心
+        if valid_points.shape[0] > 0:
+            # 计算有效点的质心
+            centroid = np.mean(valid_points[:, :2], axis=0)
+            print(f"质心坐标: {centroid}")
+
+            print(f"质心坐标: {centroid}")
+
+            # 计算每个有效点到质心的偏移量
+            offsets = np.linalg.norm(pose[:, :2] - centroid, axis=1)
+            # 统计偏移量大于 150 的数量
+            count_large_offsets = np.sum(offsets > distance)
+
+
+            # 输出每个点的偏移量
+            for i, offset in enumerate(offsets):
+                print(f"点 {i + 1} 到质心的偏移量: {offset}")
+            return centroid, count_large_offsets
+        else:
+            print("没有找到有效的点，无法计算质心")
+            return None, 5
 
     def update_frame(self):
         ret, frame = self.capture.read()
@@ -375,82 +490,75 @@ class RealTimeDetectionApp(QMainWindow):
                 # if pose[i, 2] > self.pcutoff:
                 frame = cv2.circle(frame, (pose[i, 0:2]).astype(np.int32), self.radius, colors[i % 4], -1)
             print(f'pose is {pose[4, 0:2]}')
-            meanPose = np.mean(pose,axis=1)
-            # center
-            vector = [frame.shape[0]//2 - meanPose[0],frame.shape[1]//2 - meanPose[1]]
-            print(f"used time is {usedTime}")
-            print(f"vector is {vector}")
-            print(f"center is {meanPose}")
-            self.counter += 1
-            self.display_frame(frame)
-            self.display_pose_results(pose)
-            self.poseList.append(pose)
-            self.display_usedTime(usedTime)
-            self.display_back2center(vector)
-            midPose = pose[1, 0:2]
-            
-            # 使用 cv2.pointPolygonTest 来检测点是否在多边形内部
-            # result = cv2.pointPolygonTest(self.safeAnchor, midPose, False)
-            # flag = True
-            # if result >= 0:  # 点在多边形内或边上
-            #     pass
-            # else:
-            #     flag = False
-            #     print(f"Error: Point {midPose} is outside the safe anchor area!")
-            #     # raise ValueError(f"Error: Point {midPose} is outside the safe anchor area!")
+            centroid, count_large_offsets = self.calculateMid(pose)
 
-            flag = self.judge_point(midPose)
-            if flag:  # 点在多边形内或边上
+            if centroid is None or count_large_offsets > 4 and self.use_camera2 is not None:
+                if self.use_camera2 is False:
+                    self.switch_to_camera2()
+                else:
+                    self.switch_to_camera1()
+                # return
+
+                # return
+            if count_large_offsets > 2:
+                pass
+                # return
+
+            a = self.action(frame, centroid, pose, usedTime)
+
+            
+        else:
+            pass
+            # self.stop_camera()
+    def action(self, frame, centroid, pose, usedTime):
+        # center
+        if centroid is None:
+            pass
+        else:
+            vector = [frame.shape[0]//2 - centroid[0],frame.shape[1]//2 - centroid[1]]
+            self.display_back2center(vector)
+            print(f"vector is {vector}")
+
+        
+        print(f"used time is {usedTime}")
+        print(f"center is {centroid}")
+
+        self.counter += 1
+        self.display_frame(frame)
+        self.display_pose_results(pose)
+        self.poseList.append(pose)
+        self.display_usedTime(usedTime)
+        if pose is None or centroid is None:
+            return None
+        midPose = centroid
+
+        flag = self.judge_point(midPose)
+        if flag:  # 点在多边形内或边上
+            pass
+        else:
+            print(f"Error: Point {midPose} is outside the safe anchor area!")
+            # raise ValueError(f"Error: Point {midPose} is outside the safe anchor area!")
+        
+        # if abs((midPose[0] - self.poseinit[0])) > 50 or abs(midPose[1] - self.poseinit[1]) > 50 :
+        if self.frameCount % 4 == 0 and flag:
+            # world_coords1 = self.mycalib.projectPointNoUnistort(self.poseinit[0], self.poseinit[1])
+            if self.use_camera2:
+                # replace
+                world_coords2 = self.camera2calib.projectPointNoUnistort(midPose[0], midPose[1])
+                vector = self.worldInit2 - world_coords2
+
                 pass
             else:
-                print(f"Error: Point {midPose} is outside the safe anchor area!")
-                # raise ValueError(f"Error: Point {midPose} is outside the safe anchor area!")
-            
-            # if abs((midPose[0] - self.poseinit[0])) > 50 or abs(midPose[1] - self.poseinit[1]) > 50 :
-            if self.frameCount % 4 == 0 and flag:
-                # world_coords1 = self.mycalib.projectPointNoUnistort(self.poseinit[0], self.poseinit[1])
                 world_coords2 = self.mycalib.projectPointNoUnistort(midPose[0], midPose[1])
-                # diff = wor
                 vector = self.worldInit - world_coords2
-                print(f"vector is {vector}")
-                block = 12800 / 72
-                distX = vector[0] * block
-                distY = vector[1] * block
-                print(f"distX is {distX} distY is {distY} ")
-                self.send_xy(distX,distY)
 
-                # self.moveDll.moveXY(int(distX), int(distY))
-                
-                # time.sleep(2)
-                # self.poseinit = midPose
-
-
-
-            # PredictedData[
-            # self.counter, :
-            # ] = (
-            #     pose.flatten()
-            # )  # NOTE: thereby cfg['all_joints_names'] should be same order as bodyparts!
-            # elif counter >= nframes:
-            #     break
-            # counter += 1
-
-            # pbar.close()
-        # elif ret and not flag:
-        #     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        #     faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
-
-        #     # Draw rectangles around faces
-        #     for (x, y, w, h) in faces:
-        #         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-        #     self.display_frame(frame)
-        #     self.display_results(faces)
-
-
-        else:
-            self.stop_camera()
-
+            # diff = wor
+            print(f"vector is {vector}")
+            block = 12800 / 72
+            distX = vector[0] * block
+            distY = vector[1] * block
+            print(f"distX is {distX} distY is {distY} ")
+            self.send_xy(distX,distY)
     def send_xy(self,xValue, yValue):
         command_queue.put((xValue, yValue))
         print(f"发送指令: X={xValue}, Y={yValue}")
@@ -490,9 +598,9 @@ class RealTimeDetectionApp(QMainWindow):
 
     def initModel(self):
         # configPath =  r'E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml'
-        configPath =  r'E:\yq\code\EleMice2mins-Test-2024-10-16\dlc-models\iteration-0\EleMice2minsOct16-trainset95shuffle1\test\pose_cfg.yaml'
+        configPath =  r'E:\yq\code\DLC_Project\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\test\pose_cfg.yaml'
         # weightPath =  r"E:\yq\code\DataAndModel\\dlc-models\\iteration-0\\Test2Jul27-trainset95shuffle1\\train\\snapshot-100000"
-        weightPath =  r"E:\yq\code\EleMice2mins-Test-2024-10-16\dlc-models\iteration-0\EleMice2minsOct16-trainset95shuffle1\train\snapshot-300000"
+        weightPath =  r"E:\yq\code\DLC_Project\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\train\snapshot-200000"
         path_test_config = Path(configPath)
         self.dlc_cfg = load_config(str(path_test_config))
         self.dlc_cfg[
