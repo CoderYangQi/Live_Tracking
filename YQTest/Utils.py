@@ -182,41 +182,66 @@ def converFunc():
 
     print(f"Model saved to {output_path}")
 
+def calculate_rotation_angle(v1, v2):
+    # 将二维数组转换为一维数组，避免形状错误
+    v1 = np.array(v1).flatten()  # 将 v1 变为 1D 数组
+    v2 = np.array(v2).flatten()  # 将 v2 变为 1D 数组
+    # 计算点积
+    dot_product = np.dot(v1, v2)
 
+    # 计算叉积的z分量，适用于二维向量 (A_x * B_y - A_y * B_x)
+    cross_product_z = v1[0] * v2[1] - v1[1] * v2[0]
+
+    # 计算旋转角度，atan2 会返回弧度，考虑点积和叉积的符号
+    angle_radians = np.arctan2(cross_product_z, dot_product)
+
+    # 将弧度转换为角度
+    angle_degrees = np.degrees(angle_radians)
+
+    return angle_degrees
 if __name__ == '__main__':
-    # converFunc()
-    path_test_config = Path(
-        r'E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml')
-    dlc_cfg = load_config(str(path_test_config))
-    dlc_cfg["init_weights"] = r"E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\train\snapshot-100000"
+    angleRes = calculate_rotation_angle(originVec, currentVec)
+    print(f"angleRes is {angleRes}")
 
-    sess, inputs, outputs = setup_pose_prediction(dlc_cfg, allow_growth=False)
-    TFGPUinference = False
-    cfg = {}
-    cfg["cropping"] = False
-    root = r"D:\USERS\yq\code\MotionTracking\DeepLabCut\YQScripts\testdata\Test20s-YQ-2024-07-28\videos"
-    video = os.path.join(root, "test_20s.mp4")
-    cap = cv2.VideoCapture(video)
-    if not cap.isOpened():
-        raise IOError(
-            "Video could not be opened. Please check that the the file integrity."
-        )
-    # https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html#videocapture-get
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    duration = nframes * 1.0 / fps
-    size = (
-        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-    )
+    nearRes = calculate_rotation_angle(prevVec, currentVec)
+    print(f"nearRes is {nearRes}")
 
-    if TFGPUinference:
-        PredictedData, nframes = GetPoseS_GTF(
-            cfg, dlc_cfg, sess, inputs, outputs, cap, nframes
-        )
-        print(PredictedData)
-    else:
-        pass
+    pass
+    # # converFunc()
+    # path_test_config = Path(
+    #     r'E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml')
+    # dlc_cfg = load_config(str(path_test_config))
+    # dlc_cfg["init_weights"] = r"E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\train\snapshot-100000"
+
+    # sess, inputs, outputs = setup_pose_prediction(dlc_cfg, allow_growth=False)
+    # TFGPUinference = False
+    # cfg = {}
+    # cfg["cropping"] = False
+    # root = r"D:\USERS\yq\code\MotionTracking\DeepLabCut\YQScripts\testdata\Test20s-YQ-2024-07-28\videos"
+    # video = os.path.join(root, "test_20s.mp4")
+    # cap = cv2.VideoCapture(video)
+    # if not cap.isOpened():
+    #     raise IOError(
+    #         "Video could not be opened. Please check that the the file integrity."
+    #     )
+    # # https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html#videocapture-get
+    # fps = cap.get(cv2.CAP_PROP_FPS)
+    # nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # duration = nframes * 1.0 / fps
+    # size = (
+    #     int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+    #     int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+    # )
+
+    # if TFGPUinference:
+    #     PredictedData, nframes = GetPoseS_GTF(
+    #         cfg, dlc_cfg, sess, inputs, outputs, cap, nframes
+    #     )
+    #     print(PredictedData)
+    # else:
+    #     pass
+
+
     # PredictedData, nframes = GetPoseS(
     #     cfg, dlc_cfg, sess, inputs, outputs, cap, nframes
     # )
