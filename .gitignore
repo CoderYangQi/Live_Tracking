@@ -3,4 +3,5 @@
 /example_processors/*
 /reinstall.sh
 /.idea/*
+/YQTest/Debug
 #YQTest/saveTest/*

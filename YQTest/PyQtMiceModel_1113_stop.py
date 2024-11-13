@@ -70,7 +70,7 @@ class MechanicalAxisController:
         a=self.dll.GA_InitLookAheadSingleEX(1,0,speedx,speedy,200,50,4000,4000,2,2,2,2,2,5,5,5,5,5,1,1,1,1,1)
         print('初始化前瞻，返回值:',a)
 
-        # a = self.dll.GA_CrdStart(1,0)
+        a = self.dll.GA_CrdStart(1,0)
         print('启动坐标系运动,返回值:',a)
 
 
@@ -99,6 +99,23 @@ class MechanicalAxisController:
 
     # 接收并执行 x 和 y 的插补运动
     def execute_motion(self, xValue, yValue):
+
+        # xy stop
+        axis = 2
+        lMask = (0x0001 << (axis - 1))  # 计算掩码值
+        lOption = 0  # 根据函数要求设置此参数
+        # 软件stop 
+        a = self.dll.GA_Stop(lMask, lOption)
+
+
+        axis = 1
+        lMask = (0x0001 << (axis - 1))  # 计算掩码值
+        a = self.dll.GA_Stop(lMask, lOption)
+
+        ############
+        ############
+
+
         print(f"执行插补运动: X={xValue}, Y={yValue}")
         a = self.dll.GA_LnXY(1, int(xValue), int(yValue), c_double(20.5), c_double(0.9), 0, 0, 2)
         # control the movement 
@@ -219,8 +236,8 @@ class RealTimeDetectionApp(QMainWindow):
 
         # self.moveDll = Move()
         # self.poseinit = [827, 314]
-        self.poseinit = [1169,  337]
-        self.poseinit2 = [1435,  577]
+        self.poseinit = [890,  434]
+        self.poseinit2 = [1259,  453]
         self.frameCount = 0
         #### camera index
 
@@ -234,8 +251,8 @@ class RealTimeDetectionApp(QMainWindow):
         self.distanceThreshold = 50
 
         # 初始化摄像头索引和状态
-        self.camera1_index = 2  # 第一个摄像头的索引
-        self.camera2_index = 1  # 第二个摄像头的索引
+        self.camera1_index = 1  # 第一个摄像头的索引
+        self.camera2_index = 2  # 第二个摄像头的索引
         self.active_camera = None
         self.capture = None
 
@@ -281,11 +298,12 @@ class RealTimeDetectionApp(QMainWindow):
         ])  # 你的相机内参矩阵
         self.mycalib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
 
+        
         # refine
-        image_points = np.array([[1388, 356],
-                    [1379, 130],
-                    [1668, 126],
-                    [1680, 350]
+        image_points = np.array([[1031, 334],
+                    [1028, 99],
+                    [1331, 93],
+                    [1332, 330]
                     ] , dtype= np.float64)
         object_points = np.array([[0,0,0],
                        [250,0,0],
@@ -330,10 +348,10 @@ class RealTimeDetectionApp(QMainWindow):
         self.camera2calib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
 
         # refine
-        image_points = np.array([[1031, 334],
-                    [1028, 99],
-                    [1331, 93],
-                    [1332, 330]
+        image_points = np.array([[1388, 356],
+                    [1379, 130],
+                    [1668, 126],
+                    [1680, 350]
                     ] , dtype= np.float64)
         object_points = np.array([[0,0,0],
                        [250,0,0],
