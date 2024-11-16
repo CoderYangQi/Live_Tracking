@@ -4,4 +4,5 @@
 /reinstall.sh
 /.idea/*
 /YQTest/Debug
+/YQTest/saveTest
 #YQTest/saveTest/*
