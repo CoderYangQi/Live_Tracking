@@ -27,10 +27,12 @@ print('复位板卡GA_Reset返回值:',a)
 a=dll.GA_EncOff(1)
 print('关闭轴1编码器:',a)
 
-# a=dll.GA_ZeroPos(1,1)
+a=dll.GA_ZeroPos(1,8)
 # print('清零轴1零位，返回值:',a)
 
 a=dll.GA_AxisOn(1)
+a=dll.GA_AxisOn(2)
+a=dll.GA_AxisOn(3)
 print('使能轴1返回值:',a)
 
 a=dll.GA_SetCrdPrmSingleEX(1,2,1,2,0,0,0,0,0,0,c_double(2000),c_double(5),0,1,0,0,0,0,0,0,0,0)
@@ -38,7 +40,7 @@ print('建立2维坐标系，返回值:',a)
 dPrfPosx = c_double(0)
 dPrfPosy = c_double(0)
 speed = 500
-a=dll.GA_InitLookAheadSingleEX(1,0,speed,speed,speed,50,400,400,2,2,2,2,2,5,5,5,5,5,1,1,1,1,1)
+a=dll.GA_InitLookAheadSingleEX(1,0,200,speed,speed,speed,400,400,2,2,2,2,2,5,5,5,5,5,1,1,1,1,1)
 print('初始化前瞻，返回值:',a)
 
 a = dll.GA_CrdStart(1,0)
@@ -73,10 +75,64 @@ def stop():
     axis = 1
     lMask = (0x0001 << (axis - 1))  # 计算掩码值
     a = dll.GA_Stop(lMask, lOption)
-move(10000,10000)
-time.sleep(2)
-stop()
-move(-10000,-10000)
+def moveZ(zValue):
+    axis = 3
+    a=dll.GA_AxisOn(axis)
+    print('使能轴1返回值:',a)
+
+    a=dll.GA_PrfTrap(axis)
+    print('设置轴1进入点位模式，返回值:',a)
+
+    a=dll.GA_SetTrapPrmSingle(axis,c_double(1.0),c_double(1.0),c_double(0.0),0)
+    print('设置轴1点位运动参数，返回值:',a)
+    a=dll.GA_SetPos(axis,zValue)
+    print('设置轴1运动目标位置为20000脉冲的位置，返回值:',a)
+    a=dll.GA_SetVel(axis,c_double(7.5))
+    print('设置轴1运动速度为7.5脉冲/毫秒，返回值:',a)
+    a=dll.GA_Update(2**(axis - 1))
+def moveY(yValue):
+    axis = 2
+    a=dll.GA_AxisOn(axis)
+    print('使能轴1返回值:',a)
+
+    a=dll.GA_PrfTrap(axis)
+    print('设置轴1进入点位模式，返回值:',a)
+
+    a=dll.GA_SetTrapPrmSingle(axis,c_double(1.0),c_double(1.0),c_double(0.0),0)
+    print('设置轴1点位运动参数，返回值:',a)
+    a=dll.GA_SetPos(axis,yValue)
+    print('设置轴1运动目标位置为20000脉冲的位置，返回值:',a)
+    a=dll.GA_SetVel(axis,c_double(7.5))
+    print('设置轴1运动速度为7.5脉冲/毫秒，返回值:',a)
+    a=dll.GA_Update(2**(axis - 1))
+def moveX(xValue):
+    axis = 1
+    a=dll.GA_AxisOn(axis)
+    print('使能轴1返回值:',a)
+
+    a=dll.GA_PrfTrap(axis)
+    print('设置轴1进入点位模式，返回值:',a)
+
+    a=dll.GA_SetTrapPrmSingle(axis,c_double(1.0),c_double(1.0),c_double(0.0),0)
+    print('设置轴1点位运动参数，返回值:',a)
+    a=dll.GA_SetPos(axis,xValue)
+    print('设置轴1运动目标位置为20000脉冲的位置，返回值:',a)
+    a=dll.GA_SetVel(axis,c_double(7.5))
+    print('设置轴1运动速度为7.5脉冲/毫秒，返回值:',a)
+    a=dll.GA_Update(2**(axis - 1))
+
+x,y,z = 10000,20000,40000
+# moveZ(z)
+# time.sleep(1)
+moveY(y)
+# time.sleep(1)
+moveX(x)
+# time.sleep(5)
+# value = 20000
+# move(x,y)
+# time.sleep(2)
+# stop()
+# move(-10000,-10000)
 
 
 

@@ -34,7 +34,7 @@ class MechanicalAxisController:
 
     # 初始化系统
     def init_motion_system(self):
-        self.dll = CDLL(r"E:\yq\code\github\Live_Tracking\YQTest\GAS.dll")
+        self.dll = CDLL(r"F:\yq\code\Live_Tracking\YQTest\GAS.dll")
 
         print(self.dll)
 
@@ -100,17 +100,17 @@ class MechanicalAxisController:
     # 接收并执行 x 和 y 的插补运动
     def execute_motion(self, xValue, yValue):
 
-        # xy stop
-        axis = 2
-        lMask = (0x0001 << (axis - 1))  # 计算掩码值
-        lOption = 0  # 根据函数要求设置此参数
-        # 软件stop 
-        a = self.dll.GA_Stop(lMask, lOption)
+        # # xy stop
+        # axis = 2
+        # lMask = (0x0001 << (axis - 1))  # 计算掩码值
+        # lOption = 0  # 根据函数要求设置此参数
+        # # 软件stop 
+        # a = self.dll.GA_Stop(lMask, lOption)
 
 
-        axis = 1
-        lMask = (0x0001 << (axis - 1))  # 计算掩码值
-        a = self.dll.GA_Stop(lMask, lOption)
+        # axis = 1
+        # lMask = (0x0001 << (axis - 1))  # 计算掩码值
+        # a = self.dll.GA_Stop(lMask, lOption)
 
         ############
         ############
@@ -135,14 +135,14 @@ class MechanicalAxisController:
     # 接收并执行 z 的 运动
     def execute_z(self, zValue):
         axis = 3
-        lMask = (0x0001 << (axis - 1))  # 计算掩码值
-        lOption = 0  # 根据函数要求设置此参数
-        # 软件stop 
-        a = self.dll.GA_Stop(lMask, lOption)
+        # lMask = (0x0001 << (axis - 1))  # 计算掩码值
+        # lOption = 0  # 根据函数要求设置此参数
+        # # 软件stop 
+        # a = self.dll.GA_Stop(lMask, lOption)
 
         # flip z value
         zValue = - zValue
-
+        axis = 3
         print(f"执行插补运动: Z={zValue}")
         a=self.dll.GA_SetPos(axis,zValue)
         print(f'设置轴3运动目标位置为{zValue}脉冲的位置，返回值:',a)
@@ -236,8 +236,13 @@ class RealTimeDetectionApp(QMainWindow):
 
         # self.moveDll = Move()
         # self.poseinit = [827, 314]
-        self.poseinit = [890,  434]
-        self.poseinit2 = [1259,  453]
+        DetectFlag = True
+        if DetectFlag:
+            
+            self.DetectPoint()
+        else:
+            self.poseinit = [663,  648]
+            self.poseinit2 = [1022,  671]
         self.frameCount = 0
         #### camera index
 
@@ -251,8 +256,8 @@ class RealTimeDetectionApp(QMainWindow):
         self.distanceThreshold = 50
 
         # 初始化摄像头索引和状态
-        self.camera1_index = 1  # 第一个摄像头的索引
-        self.camera2_index = 2  # 第二个摄像头的索引
+        self.camera1_index = 2  # 第一个摄像头的索引 right
+        self.camera2_index = 0  # 第二个摄像头的索引 left
         self.active_camera = None
         self.capture = None
 
@@ -278,6 +283,26 @@ class RealTimeDetectionApp(QMainWindow):
                                     [2000, 1900],
                                     [0, 1900]], np.int32)
         # self.init_threshold()
+    def DetectPoint(self):
+        from TemplateMatch import match_template_rgb
+        # 示例用法
+        template_path = 'Template.jpg'  # 替换为模板图像路径
+        image1_path = 'frame2.jpg'        # 替换为目标图像路径
+        image2_path = 'frame1.jpg'        # 替换为目标图像路径
+        template = cv2.imread(template_path)
+        image1 = cv2.imread(image1_path)
+        image2 = cv2.imread(image2_path)
+        roi_range1, center1 = match_template_rgb(template, image1)
+        print(f"roi_range1 ROI范围: {roi_range1}")
+        print(f"center1 中心点: {center1}")
+        roi_range2, center2 = match_template_rgb(template, image2)
+        print(f"roi_range2 ROI范围: {roi_range2}")
+        print(f"center2 中心点: {center2}")
+        self.poseinit = center1
+        self.poseinit2 = center2
+
+
+    #  右边 是 9** 577
     def init_cameraMatrix(self):
         fx = 964.12
         fy = 969.67
@@ -300,10 +325,10 @@ class RealTimeDetectionApp(QMainWindow):
 
         
         # refine
-        image_points = np.array([[1031, 334],
-                    [1028, 99],
-                    [1331, 93],
-                    [1332, 330]
+        image_points = np.array([[971, 307],
+                    [975, 71],
+                    [1278, 71],
+                    [1274, 310]
                     ] , dtype= np.float64)
         object_points = np.array([[0,0,0],
                        [250,0,0],
@@ -315,16 +340,8 @@ class RealTimeDetectionApp(QMainWindow):
         self.mycalib.rvec = rvec
         self.mycalib.tvec = tvec
 
-        # self.mycalib.rvec = np.array ([[ 0.00616052],
-        # [ 0.05821707],
-        # [-1.58579181]])
-
-        # self.mycalib.tvec = np.array([[  49.39697075],
-        # [-239.42566489],
-        # [1018.93725814]])
-
-        self.mycalib.Test()
-        # self.init_threshold()
+    
+    #  left 是 1000 586
     def init_camera2_Matrix(self):
         print(f"init_camera2_Matrix")
         fx = 995.62
@@ -348,10 +365,10 @@ class RealTimeDetectionApp(QMainWindow):
         self.camera2calib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
 
         # refine
-        image_points = np.array([[1388, 356],
-                    [1379, 130],
-                    [1668, 126],
-                    [1680, 350]
+        image_points = np.array([[1333, 329],
+                    [1332, 102],
+                    [1624, 104],
+                    [1628, 331]
                     ] , dtype= np.float64)
         object_points = np.array([[0,0,0],
                        [250,0,0],
@@ -362,16 +379,9 @@ class RealTimeDetectionApp(QMainWindow):
                                         self.camera2calib.camera_matrix, self.camera2calib.dist_coeffs)
 
 
-        # self.camera2calib.rvec = np.array ([[-0.17508757],
-        # [-0.1618264 ],
-        # [-1.57177937]])
-        # self.camera2calib.tvec = np.array([[ 399.2642267 ],
-        # [ -24.76443787],
-        # [1112.85500664]])
         self.camera2calib.rvec = rvec
         self.camera2calib.tvec = tvec
 
-        self.camera2calib.Test()
 
     def init_threshold(self):
         image_path = r'E:\yq\code\DLC_Project\12.jpg'  # 替换为你的图像路径
@@ -690,6 +700,7 @@ class RealTimeDetectionApp(QMainWindow):
         print(f"ang2pulse is {ang2pulse}")
         
         flag = self.judge_point(midPose)
+        flag = True
         if flag:  # 点在多边形内或边上
             pass
         else:
@@ -702,9 +713,12 @@ class RealTimeDetectionApp(QMainWindow):
             ############
             ############
             
+            # self.send_z(self.pulseState)
+            pass
+
+
+        if self.frameCount % 4 == 0 and flag:
             self.send_z(self.pulseState)
-
-
 
             #######################
             #######################
@@ -770,9 +784,9 @@ class RealTimeDetectionApp(QMainWindow):
 
     def initModel(self):
         # configPath =  r'E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml'
-        configPath =  r'E:\yq\code\DLC_Project\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\test\pose_cfg.yaml'
+        configPath =  r'F:\yq\code\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\test\pose_cfg.yaml'
         # weightPath =  r"E:\yq\code\DataAndModel\\dlc-models\\iteration-0\\Test2Jul27-trainset95shuffle1\\train\\snapshot-100000"
-        weightPath =  r"E:\yq\code\DLC_Project\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\train\snapshot-200000"
+        weightPath =  r"F:\yq\code\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\train\snapshot-200000"
         path_test_config = Path(configPath)
         self.dlc_cfg = load_config(str(path_test_config))
         self.dlc_cfg[

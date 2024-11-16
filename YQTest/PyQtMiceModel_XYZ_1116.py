@@ -22,6 +22,7 @@ import math
 # a=dll.GA_ZeroPos(1,8)
 dPrfPosX = c_double(0)
 dPrfPosY = c_double(0)
+dPrfPosZ = c_double(0)
 
 # 定义队列用于在线程之间传递 xValue 和 yValue
 command_queue = Queue()
@@ -52,25 +53,34 @@ class MechanicalAxisController:
         a=self.dll. GA_Reset()
         print('复位板卡GA_Reset返回值:',a)
 
-        a=self.dll.GA_EncOff(1)
-        print('关闭轴1编码器:',a)
+        # a=self.dll.GA_EncOff(1)
+        # print('关闭轴1编码器:',a)
 
-        a=self.dll.GA_ZeroPos(1,1)
-        print('清零轴1零位，返回值:',a)
+        # a=self.dll.GA_ZeroPos(1,8)
+        # print('清零轴1零位，返回值:',a)
 
         a=self.dll.GA_AxisOn(1)
+        a=self.dll.GA_AxisOn(2)
+        a=self.dll.GA_AxisOn(3)
         print('使能轴1返回值:',a)
 
-        a=self.dll.GA_SetCrdPrmSingleEX(1,2,1,2,0,0,0,0,0,0,c_double(2000),c_double(5),0,1,0,0,0,0,0,0,0,0)
+
+
+        a=self.dll.GA_SetCrdPrmSingleEX(1,3,1,2,3,0,0,0,0,0,c_double(4000),c_double(5),0,1,0,0,0,0,0,0,0,0)
+
+        # a=self.dll.GA_SetCrdPrmSingleEX(1,2,1,2,0,0,0,0,0,0,c_double(2000),c_double(5),0,1,0,0,0,0,0,0,0,0)
+
         print('建立2维坐标系，返回值:',a)
         dPrfPosx = c_double(0)
         dPrfPosy = c_double(0)
-        speedx = 300
-        speedy = 300
-        a=self.dll.GA_InitLookAheadSingleEX(1,0,speedx,speedy,200,50,4000,4000,2,2,2,2,2,5,5,5,5,5,1,1,1,1,1)
+        speedx = 1000
+        speedy = 1000
+        speedz = 1000
+        a=self.dll.GA_InitLookAheadSingleEX(1,0,200,speedx,speedy,speedz,4000,4000,2,2,2,2,2,5,5,5,5,5,1,1,1,1,1)
+
         print('初始化前瞻，返回值:',a)
 
-        # a = self.dll.GA_CrdStart(1,0)
+        a = self.dll.GA_CrdStart(1,0)
         print('启动坐标系运动,返回值:',a)
 
 
@@ -79,60 +89,48 @@ class MechanicalAxisController:
         #############################################
         #############################################
        
-        # init axis == 3
-        axis = 3
-        a=self.dll.GA_EncOff(axis)
-        print(f'关闭轴{axis}编码器:',a)
-
-        # a=self.dll.GA_ZeroPos(1,8)
-        print('清零轴1零位，返回值:',a)
-
-        a=self.dll.GA_AxisOn(axis)
-        print('使能轴1返回值:',a)
-
-        a=self.dll.GA_PrfTrap(axis)
-        print('设置轴1进入点位模式，返回值:',a)
-
-        a=self.dll.GA_SetTrapPrmSingle(axis,c_double(1.0),c_double(1.0),c_double(0.0),0)
-        print('设置轴1点位运动参数，返回值:',a)
-
-
-    # 接收并执行 x 和 y 的插补运动
-    def execute_motion(self, xValue, yValue):
-        print(f"执行插补运动: X={xValue}, Y={yValue}")
-        a = self.dll.GA_LnXY(1, int(xValue), int(yValue), c_double(20.5), c_double(0.9), 0, 0, 2)
-        # control the movement 
-
-        a=self.dll.GA_CrdData(1,0,0)
-        ######
-        ######
-        print('将数据压入控制卡')
-        print(f'插入2维插补数据 X={xValue}, Y={yValue}, 返回值: {a}')
-        a = self.dll.GA_GetPrfPos(1, byref(dPrfPosX),1,0)
-        a = self.dll.GA_GetPrfPos(1, byref(dPrfPosY),1,0)
-        dValuex = dPrfPosX
-        dValuey = dPrfPosY
-        print('获取轴1脉冲位置，返回值：',a,'获取值：',dValuex)
-        print('获取轴2脉冲位置，返回值：',a,'获取值：',dValuey)
-
-    # 接收并执行 z 的 运动
-    def execute_z(self, zValue):
-        axis = 3
+    def move(self,axis, Value, speed):
+        
         lMask = (0x0001 << (axis - 1))  # 计算掩码值
         lOption = 0  # 根据函数要求设置此参数
         # 软件stop 
         a = self.dll.GA_Stop(lMask, lOption)
 
-        # flip z value
-        zValue = - zValue
+        a=self.dll.GA_PrfTrap(axis)
+        print(f'设置轴{axis}进入点位模式，返回值:',a)
 
-        print(f"执行插补运动: Z={zValue}")
-        a=self.dll.GA_SetPos(axis,zValue)
-        print(f'设置轴3运动目标位置为{zValue}脉冲的位置，返回值:',a)
-        a=self.dll.GA_SetVel(axis,c_double(20))
-        print('设置轴3运动速度为7.5脉冲/毫秒，返回值:',a)
+        a=self.dll.GA_SetTrapPrmSingle(axis,c_double(1.0),c_double(1.0),c_double(0.0),0)
+        print(f'设置轴{axis}点位运动参数，返回值:',a)
+        a=self.dll.GA_SetPos(axis,Value)
+        print(f'设置轴{axis}运动目标位置为{Value}脉冲的位置，返回值:',a)
+        a=self.dll.GA_SetVel(axis,c_double(speed))
+        print(f'设置轴{axis}运动速度为{speed}脉冲/毫秒，返回值:',a)
         a=self.dll.GA_Update(2**(axis - 1))
-        print('启动轴3运动')
+    
+
+
+    # 接收并执行 x 和 y 的插补运动
+    def execute_motion(self, xValue, yValue, zValue):
+        ############
+        ############
+        self.move(axis=1,Value=xValue,speed=7.5)
+        self.move(axis=2,Value=yValue,speed=7.5)
+        self.move(axis=3,Value=zValue,speed=10)
+
+        ######
+        ######
+        print(f'插入3维插补数据 X={xValue}, Y={yValue},Z={zValue} ')
+        a = self.dll.GA_GetPrfPos(1, byref(dPrfPosX),1,0)
+        a = self.dll.GA_GetPrfPos(1, byref(dPrfPosY),1,0)
+        a = self.dll.GA_GetPrfPos(1, byref(dPrfPosZ),1,0)
+        dValuex = dPrfPosX
+        dValuey = dPrfPosY
+        dValuez = dPrfPosZ
+        print('获取轴1脉冲位置，返回值：',a,'获取值：',dValuex)
+        print('获取轴2脉冲位置，返回值：',a,'获取值：',dValuey)
+        print('获取轴3脉冲位置，返回值：',a,'获取值：',dValuez)
+
+
 
 
     # 控制端线程，接收 xValue 和 yValue 并控制机械轴
@@ -140,11 +138,8 @@ class MechanicalAxisController:
         while True:
             # 等待从队列获取 xValue 和 yValue
             if not command_queue.empty():
-                xValue, yValue = command_queue.get()
-                self.execute_motion(int(xValue), int(yValue))
-            if not z_queue.empty():
-                zValue = z_queue.get()
-                self.execute_z(int(zValue))
+                xValue, yValue, zValue = command_queue.get()
+                self.execute_motion(int(xValue), int(yValue), int(zValue))
             time.sleep(0.01)  # 避免频繁查询队列消耗CPU
 
 # 发送指令线程，模拟目标检测，定时传入 xValue 和 yValue
@@ -219,8 +214,13 @@ class RealTimeDetectionApp(QMainWindow):
 
         # self.moveDll = Move()
         # self.poseinit = [827, 314]
-        self.poseinit = [1169,  337]
-        self.poseinit2 = [1435,  577]
+        DetectFlag = True
+        if DetectFlag:
+            
+            self.DetectPoint()
+        else:
+            self.poseinit = [663,  648]
+            self.poseinit2 = [1022,  671]
         self.frameCount = 0
         #### camera index
 
@@ -234,8 +234,8 @@ class RealTimeDetectionApp(QMainWindow):
         self.distanceThreshold = 50
 
         # 初始化摄像头索引和状态
-        self.camera1_index = 2  # 第一个摄像头的索引
-        self.camera2_index = 1  # 第二个摄像头的索引
+        self.camera1_index = 2  # 第一个摄像头的索引 right
+        self.camera2_index = 0  # 第二个摄像头的索引 left
         self.active_camera = None
         self.capture = None
 
@@ -261,6 +261,26 @@ class RealTimeDetectionApp(QMainWindow):
                                     [2000, 1900],
                                     [0, 1900]], np.int32)
         # self.init_threshold()
+    def DetectPoint(self):
+        from TemplateMatch import match_template_rgb
+        # 示例用法
+        template_path = 'Template.jpg'  # 替换为模板图像路径
+        image1_path = 'frame2.jpg'        # 替换为目标图像路径
+        image2_path = 'frame1.jpg'        # 替换为目标图像路径
+        template = cv2.imread(template_path)
+        image1 = cv2.imread(image1_path)
+        image2 = cv2.imread(image2_path)
+        roi_range1, center1 = match_template_rgb(template, image1)
+        print(f"roi_range1 ROI范围: {roi_range1}")
+        print(f"center1 中心点: {center1}")
+        roi_range2, center2 = match_template_rgb(template, image2)
+        print(f"roi_range2 ROI范围: {roi_range2}")
+        print(f"center2 中心点: {center2}")
+        self.poseinit = center1
+        self.poseinit2 = center2
+
+
+    #  右边 是 9** 577
     def init_cameraMatrix(self):
         fx = 964.12
         fy = 969.67
@@ -281,11 +301,12 @@ class RealTimeDetectionApp(QMainWindow):
         ])  # 你的相机内参矩阵
         self.mycalib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
 
+        
         # refine
-        image_points = np.array([[1388, 356],
-                    [1379, 130],
-                    [1668, 126],
-                    [1680, 350]
+        image_points = np.array([[971, 307],
+                    [975, 71],
+                    [1278, 71],
+                    [1274, 310]
                     ] , dtype= np.float64)
         object_points = np.array([[0,0,0],
                        [250,0,0],
@@ -297,16 +318,8 @@ class RealTimeDetectionApp(QMainWindow):
         self.mycalib.rvec = rvec
         self.mycalib.tvec = tvec
 
-        # self.mycalib.rvec = np.array ([[ 0.00616052],
-        # [ 0.05821707],
-        # [-1.58579181]])
-
-        # self.mycalib.tvec = np.array([[  49.39697075],
-        # [-239.42566489],
-        # [1018.93725814]])
-
-        self.mycalib.Test()
-        # self.init_threshold()
+    
+    #  left 是 1000 586
     def init_camera2_Matrix(self):
         print(f"init_camera2_Matrix")
         fx = 995.62
@@ -330,10 +343,10 @@ class RealTimeDetectionApp(QMainWindow):
         self.camera2calib.dist_coeffs = np.array([k1, k2, p1, p2, k3])  # 你的畸变系数
 
         # refine
-        image_points = np.array([[1031, 334],
-                    [1028, 99],
-                    [1331, 93],
-                    [1332, 330]
+        image_points = np.array([[1333, 329],
+                    [1332, 102],
+                    [1624, 104],
+                    [1628, 331]
                     ] , dtype= np.float64)
         object_points = np.array([[0,0,0],
                        [250,0,0],
@@ -344,16 +357,9 @@ class RealTimeDetectionApp(QMainWindow):
                                         self.camera2calib.camera_matrix, self.camera2calib.dist_coeffs)
 
 
-        # self.camera2calib.rvec = np.array ([[-0.17508757],
-        # [-0.1618264 ],
-        # [-1.57177937]])
-        # self.camera2calib.tvec = np.array([[ 399.2642267 ],
-        # [ -24.76443787],
-        # [1112.85500664]])
         self.camera2calib.rvec = rvec
         self.camera2calib.tvec = tvec
 
-        self.camera2calib.Test()
 
     def init_threshold(self):
         image_path = r'E:\yq\code\DLC_Project\12.jpg'  # 替换为你的图像路径
@@ -672,6 +678,7 @@ class RealTimeDetectionApp(QMainWindow):
         print(f"ang2pulse is {ang2pulse}")
         
         flag = self.judge_point(midPose)
+        flag = True
         if flag:  # 点在多边形内或边上
             pass
         else:
@@ -684,9 +691,12 @@ class RealTimeDetectionApp(QMainWindow):
             ############
             ############
             
-            self.send_z(self.pulseState)
+            # self.send_z(self.pulseState)
+            pass
 
 
+        if self.frameCount % 4 == 0 and flag:
+            # self.send_z(self.pulseState)
 
             #######################
             #######################
@@ -708,10 +718,15 @@ class RealTimeDetectionApp(QMainWindow):
             distX = vector[0] * block
             distY = vector[1] * block
             print(f"distX is {distX} distY is {distY} ")
-            self.send_xy(distX,distY)
+            # self.send_xy(distX,distY)
+            self.send_xyz(distX, distY, self.pulseState)
     def send_xy(self,xValue, yValue):
         command_queue.put((xValue, yValue))
         print(f"发送指令: X={xValue}, Y={yValue}")
+        pass
+    def send_xyz(self,xValue, yValue, zValue):
+        command_queue.put((xValue, yValue, zValue))
+        print(f"发送指令: X={xValue}, Y={yValue}, Z={zValue}")
         pass
     def send_z(self,zValue):
         z_queue.put((zValue))
@@ -752,9 +767,9 @@ class RealTimeDetectionApp(QMainWindow):
 
     def initModel(self):
         # configPath =  r'E:\yq\code\DataAndModel\dlc-models\iteration-0\Test2Jul27-trainset95shuffle1\test\pose_cfg.yaml'
-        configPath =  r'E:\yq\code\DLC_Project\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\test\pose_cfg.yaml'
+        configPath =  r'F:\yq\code\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\test\pose_cfg.yaml'
         # weightPath =  r"E:\yq\code\DataAndModel\\dlc-models\\iteration-0\\Test2Jul27-trainset95shuffle1\\train\\snapshot-100000"
-        weightPath =  r"E:\yq\code\DLC_Project\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\train\snapshot-200000"
+        weightPath =  r"F:\yq\code\dlc-models\iteration-0\Mice1024Oct24-trainset95shuffle1\train\snapshot-200000"
         path_test_config = Path(configPath)
         self.dlc_cfg = load_config(str(path_test_config))
         self.dlc_cfg[
