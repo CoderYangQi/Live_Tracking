@@ -1,42 +1,47 @@
+# F:\yq\code\Live_Tracking\YQTest\Debug
+
 import cv2
+import os
+import glob
 
-# 初始化一个列表，用于存储摄像头对象
-cameras = []
-index = 0  # 摄像头索引从0开始
+def images_to_video(image_folder, output_path, fps=30):
+    """
+    将图像序列合并为视频。
+    
+    :param image_folder: 包含 JPG 图像的文件夹路径
+    :param output_path: 输出视频路径（例如 output.mp4）
+    :param fps: 视频帧率，默认30
+    """
+    # 获取文件夹中按自然数排列的 JPG 文件
+    # images = sorted(glob.glob(os.path.join(image_folder, "*.jpg")), key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    images = glob.glob(os.path.join(image_folder, "*.jpg"))
 
-# 尝试打开多个摄像头
-while True:
-    cap = cv2.VideoCapture(index)
-    if not cap.isOpened():
-        break
-    cameras.append(cap)
-    index += 1
+    # 确保有图像
+    if not images:
+        print("未找到任何图像文件！")
+        return
 
-# 如果没有检测到摄像头
-if not cameras:
-    print("未检测到任何摄像头！")
-    exit()
+    # 读取第一张图像以确定帧大小
+    first_image = cv2.imread(images[0])
+    height, width, layers = first_image.shape
 
-print(f"检测到 {len(cameras)} 个摄像头。")
+    # 初始化视频写入器
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 使用 MP4 编码
+    video = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-try:
-    while True:
-        # 读取所有摄像头的帧并显示
-        for i, cap in enumerate(cameras):
-            ret, frame = cap.read()
-            if ret:
-                # 显示每个摄像头的画面
-                cv2.imshow(f'Camera {i}', frame)
+    # 将所有图像写入视频
+    for image_path in images:
+        frame = cv2.imread(image_path)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        video.write(frame)
 
-        # 按下 'q' 键退出
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    # 释放资源
+    video.release()
+    print(f"视频已保存到: {output_path}")
 
-except KeyboardInterrupt:
-    print("程序已中断。")
+# 示例用法
+image_folder = r'F:\yq\code\Live_Tracking\YQTest\Debug'       # JPG 图像所在的文件夹路径
+output_video = 'output.mp4'  # 输出视频路径
+fps = 30                     # 设置帧率（可以根据需要调整）
 
-finally:
-    # 释放所有摄像头资源
-    for cap in cameras:
-        cap.release()
-    cv2.destroyAllWindows()
+images_to_video(image_folder, output_video, fps)

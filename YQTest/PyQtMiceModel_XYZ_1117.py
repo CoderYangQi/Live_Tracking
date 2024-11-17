@@ -113,9 +113,9 @@ class MechanicalAxisController:
     def execute_motion(self, xValue, yValue, zValue):
         ############
         ############
-        self.move(axis=1,Value=xValue,speed=7.5)
-        self.move(axis=2,Value=yValue,speed=7.5)
-        self.move(axis=3,Value=zValue,speed=10)
+        self.move(axis=1,Value=xValue,speed=20)
+        self.move(axis=2,Value=yValue,speed=20)
+        self.move(axis=3,Value=zValue,speed=40)
 
         ######
         ######
@@ -214,13 +214,13 @@ class RealTimeDetectionApp(QMainWindow):
 
         # self.moveDll = Move()
         # self.poseinit = [827, 314]
-        DetectFlag = True
+        DetectFlag = False
         if DetectFlag:
             
             self.DetectPoint()
         else:
-            self.poseinit = [663,  648]
-            self.poseinit2 = [1022,  671]
+            self.poseinit = [647,  459]
+            self.poseinit2 = [1008,  476]
         self.frameCount = 0
         #### camera index
 
@@ -264,16 +264,18 @@ class RealTimeDetectionApp(QMainWindow):
     def DetectPoint(self):
         from TemplateMatch import match_template_rgb
         # 示例用法
-        template_path = 'Template.jpg'  # 替换为模板图像路径
+        template1_path = 'Template2.jpg'  # 替换为模板图像路径
+        template2_path = 'Template1.jpg'  # 替换为模板图像路径
         image1_path = 'frame2.jpg'        # 替换为目标图像路径
         image2_path = 'frame1.jpg'        # 替换为目标图像路径
-        template = cv2.imread(template_path)
+        template1 = cv2.imread(template1_path)
+        template2 = cv2.imread(template2_path)
         image1 = cv2.imread(image1_path)
         image2 = cv2.imread(image2_path)
-        roi_range1, center1 = match_template_rgb(template, image1)
+        roi_range1, center1 = match_template_rgb(template1, image1)
         print(f"roi_range1 ROI范围: {roi_range1}")
         print(f"center1 中心点: {center1}")
-        roi_range2, center2 = match_template_rgb(template, image2)
+        roi_range2, center2 = match_template_rgb(template2, image2)
         print(f"roi_range2 ROI范围: {roi_range2}")
         print(f"center2 中心点: {center2}")
         self.poseinit = center1
