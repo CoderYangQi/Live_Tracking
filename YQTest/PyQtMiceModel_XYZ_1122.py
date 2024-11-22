@@ -219,8 +219,8 @@ class RealTimeDetectionApp(QMainWindow):
             
             self.DetectPoint()
         else:
-            self.poseinit = [647,  459]
-            self.poseinit2 = [1008,  476]
+            self.poseinit = [441,  220]
+            self.poseinit2 = [796,  233]
         self.frameCount = 0
         #### camera index
 
@@ -785,6 +785,11 @@ class RealTimeDetectionApp(QMainWindow):
         # self.sess, self.inputs, self.outputs = setup_pose_prediction(self.dlc_cfg, allow_growth=False)
         pass
 if __name__ == "__main__":
+    # from YQTest.MoveTestUtils.Homejason import GoHome
+    # from YQTest.MoveTestUtils.MoveXY import MoveXY
+    # GoHome()
+    # MoveXY() 
+
     app = QApplication(sys.argv)
     window = RealTimeDetectionApp()
     window.show()
