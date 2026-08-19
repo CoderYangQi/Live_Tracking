@@ -1,5 +1,18 @@
 # Pose-Tracking  
 
+## Detection Demo
+
+[![MotionDetection demo preview](docs/media/motion_detection_demo.gif)](https://gitee.com/yqustc/MotionDetection/blob/master/docs/media/out_detect_new_720p.mp4)
+
+Click the animated preview to view the full video. For the complete detection
+implementation, documentation, and source code, visit the
+[MotionDetection project](https://gitee.com/yqustc/MotionDetection).
+
+> **Demo note:** The system uses a dual-camera setup. The software automatically
+> displays the camera feed currently providing valid data, so the video may briefly
+> jump when switching between camera views. This is expected camera-switching
+> behavior rather than instability in the detection results.
+
 ## Usage
 -- YQTest/PyQtMiceModel.py
 change the model config path into your path.
